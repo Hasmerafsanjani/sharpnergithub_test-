@@ -1,0 +1,18 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+#expensesList {
+    margin-top: 20px;
+}
+
+.expense-item {
+    background-color: #f4f4f4;
+    border: 1px solid #ddd;
+    margin-top: 10px;
+    padding: 10px;
+}
+
+.expense-item div {
+    margin-bottom: 5px;
+}
