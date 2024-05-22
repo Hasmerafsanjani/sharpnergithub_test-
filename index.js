@@ -1,67 +1,91 @@
-window.onload = function() {
-    displayExpenses();
-};
+document.addEventListener('DOMContentLoaded', function() {
+  loadOrdersFromLocalStorage();
 
-function getExpenses() {
-    return JSON.parse(localStorage.getItem('expenses') || '[]');
+  document.getElementById('orderForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const price = document.getElementById('price').value;
+      const item = document.getElementById('item').value;
+      const tableNumber = document.getElementById('tableNumber').value;
+
+      const order = {
+          price: price,
+          item: item,
+          tableNumber: tableNumber
+      };
+
+      saveOrderToLocalStorage(order);
+      appendOrderToTable(order);
+      sendOrderToBackend(order);
+
+      // Clear form fields after submission
+      document.getElementById('orderForm').reset();
+      document.getElementById('tableNumber').selectedIndex = 0;
+  });
+});
+
+function saveOrderToLocalStorage(order) {
+  let orders = JSON.parse(localStorage.getItem('orders')) || [];
+  orders.push(order);
+  localStorage.setItem('orders', JSON.stringify(orders));
 }
 
-function saveExpenses(expenses) {
-    localStorage.setItem('expenses', JSON.stringify(expenses));
+function loadOrdersFromLocalStorage() {
+  let orders = JSON.parse(localStorage.getItem('orders')) || [];
+  orders.forEach(order => appendOrderToTable(order));
 }
 
-function addExpense() {
-    const description = document.getElementById('description').value;
-    const amount = parseFloat(document.getElementById('amount').value);
-    if (description.trim() === '' || isNaN(amount)) {
-        alert('Please fill out both fields correctly.');
-        return;
-    }
+function appendOrderToTable(order) {
+  const ordersTableBody = document.querySelector('#ordersTable tbody');
 
-    const newExpense = { id: Date.now(), description, amount };
-    const expenses = getExpenses();
-    expenses.push(newExpense);
-    saveExpenses(expenses);
-    displayExpenses();
-    document.getElementById('description').value = '';
-    document.getElementById('amount').value = '';
+  const newRow = document.createElement('tr');
+
+  const tableNumberCell = document.createElement('td');
+  tableNumberCell.textContent = order.tableNumber;
+
+  const priceCell = document.createElement('td');
+  priceCell.textContent = `$${order.price}`;
+
+  const itemCell = document.createElement('td');
+  itemCell.textContent = order.item;
+
+  const deleteButtonCell = document.createElement('td');
+  const deleteButton = document.createElement('button');
+  deleteButton.textContent = 'Delete';
+  deleteButton.classList.add('delete');
+  deleteButton.addEventListener('click', function() {
+      deleteOrder(order, newRow);
+  });
+  deleteButtonCell.appendChild(deleteButton);
+
+  newRow.appendChild(tableNumberCell);
+  newRow.appendChild(priceCell);
+  newRow.appendChild(itemCell);
+  newRow.appendChild(deleteButtonCell);
+
+  ordersTableBody.appendChild(newRow);
 }
 
-function displayExpenses() {
-    const expenses = getExpenses();
-    const expensesList = document.getElementById('expensesList');
-    expensesList.innerHTML = '';
-
-    expenses.forEach(expense => {
-        const expenseDiv = document.createElement('div');
-        expenseDiv.className = 'expense-item';
-        expenseDiv.innerHTML = `
-            <p>Description: ${expense.description}</p>
-            <p>Amount: ₹${expense.amount.toFixed(2)}</p><button onclick="editExpense(${expense.id})">Edit</button>
-            <button onclick="deleteExpense(${expense.id})">Delete</button>
-        `;
-        expensesList.appendChild(expenseDiv);
-    });
+function deleteOrder(order, rowElement) {
+  let orders = JSON.parse(localStorage.getItem('orders')) || [];
+  orders = orders.filter(o => o.price !== order.price || o.item !== order.item || o.tableNumber !== order.tableNumber);
+  localStorage.setItem('orders', JSON.stringify(orders));
+  rowElement.remove();
 }
 
-function editExpense(expenseId) {
-    const expenses = getExpenses();
-    const index = expenses.findIndex(expense => expense.id === expenseId);
-    const expense = expenses[index];
-
-    const newDescription = prompt('Edit Description:', expense.description);
-    const newAmount = parseFloat(prompt('Edit Amount:', expense.amount));
-    if (newDescription !== null && newDescription.trim() !== '' && !isNaN(newAmount)) {
-        expense.description = newDescription;
-        expense.amount = newAmount;
-        saveExpenses(expenses);
-        displayExpenses();
-    }
-}
-
-function deleteExpense(expenseId) {
-    let expenses = getExpenses();
-    expenses = expenses.filter(expense => expense.id !== expenseId);
-    saveExpenses(expenses);
-    displayExpenses();
+function sendOrderToBackend(order) {
+  fetch('https://crudcrud.com/api/ca51b1f400334591a41856c2223a1eaa/orders', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(order)
+  })
+  .then(response => response.json())
+  .then(data => {
+      console.log('Order successfully sent to backend:', data);
+  })
+  .catch(error => {
+      console.error('Error sending order to backend:', error);
+  });
 }
