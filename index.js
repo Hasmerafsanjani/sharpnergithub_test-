@@ -44,7 +44,7 @@ function appendOrderToTable(order) {
   tableNumberCell.textContent = order.tableNumber;
 
   const priceCell = document.createElement('td');
-  priceCell.textContent = `$${order.price}`;
+  priceCell.textContent = `Rs: ${order.price}`;
 
   const itemCell = document.createElement('td');
   itemCell.textContent = order.item;
